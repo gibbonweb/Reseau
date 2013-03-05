@@ -36,7 +36,7 @@ def teardown_request(exception):
 @app.route('/')
 def show_homepage():
     reseau = g.db.reseau
-    posts = reseau.find()
+    posts = reseau.find().sort('date',pymongo.DESCENDING)
     return render_template('show_homepage.html',posts=posts)
 
 @app.route('/add', methods=['POST'])
