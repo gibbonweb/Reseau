@@ -4,17 +4,19 @@
   <meta charset="UTF-8">
   <title></title>
   <link rel="stylesheet" href="static/style.css"/>
+  <script type="text/javascript" src="static/mootools.js"></script>
+  <script type="text/javascript" src="static/reseau.js"></script>
 </head>
 <body>
 <div class="meta-nav">
   {% if not session.logged_in %}
     <a href="{{ url_for('login') }}">log in</a>
   {% else %}
-    <a href="{{ url_for('logout') }}">log out</a>
+    <a href="{{ url_for('logout') }}">log out</a> | <a href="#" id="admin-toggle">admin</a>
   {% endif %}
 </div>
 {% if session.logged_in %}
-<div class="admin-add-post">
+<div class="admin" id="admin-add-post">
     <form action="{{ url_for('add_post') }}" method="post" class="add-post">
       <dl>
         <dt>Title:
