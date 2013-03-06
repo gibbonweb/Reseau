@@ -7,16 +7,10 @@ from flask import Flask, request, session, g, redirect, url_for, \
 from contextlib import closing
 from flaskext.markdown import Markdown
 
-# default configuration
-DEBUG = True
-SECRET_KEY = 'ThisReseauIsAwesome'
-USERNAME = 'admin'
-PASSWORD = 'spam'
-
 # application
 app = Flask(__name__)
-app.config.from_object(__name__)
-app.config.from_envvar('RESEAU_SETTINGS', silent=True)
+app.config.from_pyfile('config.default.py', silent=True)
+app.config.from_pyfile('config.py', silent=True)
 Markdown(app)
 
 # DB handling

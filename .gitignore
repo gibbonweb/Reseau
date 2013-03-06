@@ -1,5 +1,8 @@
 *.py[co]
 
+# Config file (contains login and private key for generating sessions, KEEP PRIVATE)
+config.py
+
 # Packages
 *.egg
 *.egg-info
