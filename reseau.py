@@ -1,50 +1,73 @@
 # imports
-from __future__ import with_statement
-import pymongo
 import datetime
+import slugify
 from flask import Flask, request, session, g, redirect, url_for, \
      abort, render_template, flash
 from contextlib import closing
+from flaskext.mongoengine import MongoEngine
 from flaskext.markdown import Markdown
+from flaskext.debugtoolbar import DebugToolbarExtension
 
 # application
 app = Flask(__name__)
 app.config.from_pyfile('config.default.py', silent=True)
 app.config.from_pyfile('config.py', silent=True)
+db = MongoEngine(app)
 Markdown(app)
+toolbar = DebugToolbarExtension(app)
 
-# DB handling
-def connect_db():
-    return pymongo.MongoClient('localhost', 27017)
 
-@app.before_request
-def before_request():
-    g.dbconn = connect_db()
-    g.db = g.dbconn.local
+# comments
+class Comment(db.EmbeddedDocument):
+    content = db.StringField()
+    name = db.StringField(max_length=120)
+    email = db.StringField(max_length=255)
+    published_date = db.DateTimeField(default=datetime.datetime.now)
 
-@app.teardown_request
-def teardown_request(exception):
-    g.dbconn.close()
+# posts
+class Post(db.Document):
+    title = db.StringField(max_length=120, required=True)
+    #author = ReferenceField(User)
+    tags = db.ListField(db.StringField(max_length=50))
+    comments = db.ListField(db.EmbeddedDocumentField(Comment))
+    published_date = db.DateTimeField(default=datetime.datetime.now)
+    slug = db.StringField(max_length=120)
+    type = 'post'
+    meta = {'allow_inheritance': True}
+
+class TextPost(Post):
+    content = db.StringField()
+    type = 'text'
+
+#class ImagePost(Post):
+#    image_path = db.StringField()
+
+class LinkPost(Post):
+    url = db.StringField(required=True)
+    type = 'link'
 
 # routing
 @app.route('/')
 def show_homepage():
-    reseau = g.db.reseau
-    posts = reseau.find().sort('date',pymongo.DESCENDING)
+    posts = Post.objects.order_by("-published_date")
     return render_template('show_homepage.html',posts=posts)
+
+#@app.route('/post/<post_slug>')
 
 @app.route('/add', methods=['POST'])
 def add_post():
     if not session.get('logged_in'):
         abort(401)
-    post = {"author": "johannes",
-            "title": request.form['title'],
-            "content": request.form['content'],
-            "date": datetime.datetime.utcnow()}
-    reseau = g.db.reseau
-    post_id = reseau.insert(post)
-    if post_id != False:
-        flash('New post was successfully posted')
+    if request.form['type'] == 'text':
+        new_post = TextPost(title=request.form['title'], content=request.form['content'])
+    elif request.form['type'] == 'link':
+        new_post = LinkPost(title=request.form['title'], url=request.form['content'])
+    else:
+        new_post = Post(title=request.form['title'])
+    new_post.slug = slugify.slugify(request.form['title'])
+    new_post.tags = map(lambda x:x.strip(), request.form['tags'].split(','))
+    new_post.save()
+    flash('New post was successfully posted')
     return redirect(url_for('show_homepage'))
 
 @app.route('/login', methods=['GET', 'POST'])
