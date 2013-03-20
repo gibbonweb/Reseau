@@ -50,7 +50,7 @@ class LinkPost(Post):
 @app.route('/')
 def show_homepage():
     posts = Post.objects.order_by("-published_date")
-    return render_template('show_homepage.html',posts=posts)
+    return render_template(app.config['TPL_DIR'] + '/show_homepage.html',posts=posts)
 
 #@app.route('/post/<post_slug>')
 
